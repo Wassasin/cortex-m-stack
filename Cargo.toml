@@ -1,0 +1,29 @@
+[package]
+name = "cortex-m-stack"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.87"
+
+authors = ["Wouter Geraedts <git@woutergeraedts.nl>"]
+categories = ["embedded", "hardware-support", "no-std::no-alloc", "no-std"]
+keywords = ["arm", "cortex-m", "stack"]
+description = "Stack usage tools for Cortex-M processors"
+
+documentation = "https://docs.rs/cortex-m-stack"
+repository = "https://github.com/Wassasin/cortex-m-stack"
+readme = "README.md"
+
+[dependencies]
+cortex-m = "0.7"
+
+[package.metadata.docs.rs]
+targets = [
+    "thumbv8m.main-none-eabihf",
+    "thumbv6m-none-eabi",
+    "thumbv7em-none-eabi",
+    "thumbv7em-none-eabihf",
+    "thumbv7m-none-eabi",
+    "thumbv8m.base-none-eabi",
+    "thumbv8m.main-none-eabi"
+]
