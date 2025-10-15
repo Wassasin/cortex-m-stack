@@ -1,6 +1,6 @@
 [package]
 name = "cortex-m-stack"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.87"
@@ -15,7 +15,6 @@ repository = "https://github.com/Wassasin/cortex-m-stack"
 readme = "README.md"
 
 [dependencies]
-cortex-m = "0.7"
 
 [package.metadata.docs.rs]
 targets = [

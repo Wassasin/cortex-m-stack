@@ -34,7 +34,9 @@ pub const fn stack_rev() -> Range<*mut u32> {
 /// Convenience function to fetch the current stack pointer.
 #[inline]
 pub fn current_stack_ptr() -> *mut u32 {
-    cortex_m::register::msp::read() as *mut u32
+    let res;
+    unsafe { asm!("mov {}, sp", out(reg) res) };
+    res
 }
 
 /// The number of bytes that are reserved for the stack at compile time.
