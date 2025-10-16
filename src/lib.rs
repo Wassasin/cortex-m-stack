@@ -96,19 +96,43 @@ pub fn repaint_stack() {
 ///
 /// In other words: shows the worst case free stack space since [repaint_stack] was last called.
 ///
+/// This measurement can only ever be an ESTIMATE, and not a guarantee, as the amount of
+/// stack can change immediately, even during an interrupt while we are measuring, or
+/// by a devious user or compiler that re-paints the stack, obscuring the max
+/// measured value. This measurement MUST NOT be used for load-bearing-safety
+/// safety guarantees, only as a (generally accurate but non-guaranteed) measurement.
+///
 /// Runs in *O(n)* where *n* is the size of the stack.
-#[allow(clippy::manual_slice_size_calculation)]
 pub fn stack_painted() -> u32 {
-    // Safety: we should be able to read anywhere on the stack using this.
-    let slice = unsafe {
-        &*core::ptr::slice_from_raw_parts(stack().end, current_stack_free() as usize / 4)
+    let res: *const u32;
+    // SAFETY: As per the [rust reference], inline asm is allowed to look below the
+    // stack pointer. We read the values between the end of stack and the current stack 
+    // pointer, which are all valid locations.
+    //
+    // In the case of interruption, there could be false negatives where we don't see
+    // stack that was used "behind" our cursor, however this is fine because we do not
+    // rely on this number for any safety-bearing contents, only as a metrics estimate.
+    //
+    // [rust reference]: https://doc.rust-lang.org/reference/inline-assembly.html#r-asm.rules.stack-below-sp
+    unsafe {
+        asm!(
+            "0:",
+            "cmp sp, {ptr}",
+            "bls 1f",
+            "ldr {value}, [{ptr}]",
+            "cmp {value}, {paint}",
+            "bne 1f",
+            "add {ptr}, #4",
+            "b 0b",
+            "1:",
+            ptr = inout(reg) stack().end => res,
+            value = out(reg) _,
+            paint = in(reg) STACK_PAINT_VALUE,
+            options(nostack, readonly)
+        )
     };
-    for (word_i, word) in slice.iter().enumerate() {
-        if *word != STACK_PAINT_VALUE {
-            return (word_i * size_of::<u32>()) as u32;
-        }
-    }
-    (slice.len() * size_of::<u32>()) as u32
+    // Safety: res >= stack.end() because we start at stack.end()
+    (unsafe { res.byte_offset_from_unsigned(stack().end) }) as u32
 }
 
 /// Finds the number of bytes that have not been overwritten on the stack since the last repaint using binary search.
@@ -122,8 +146,14 @@ pub fn stack_painted() -> u32 {
 /// Runs in *O(log(n))* where *n* is the size of the stack.
 ///
 /// **Danger:** if the current (active) stack contains the [STACK_PAINT_VALUE] this computation may be very incorrect.
-pub fn stack_painted_binary() -> u32 {
-    // Safety: we should be able to read anywhere on the stack using this.
+///
+/// # Safety
+/// This function aliases the inactive stack, which is considered to be Undefined Behaviour.
+/// Do not use if you care about such things.
+pub unsafe fn stack_painted_binary() -> u32 {
+    // Safety: we should be able to read anywhere on the stack using this,
+    // but this is considered UB because we are aliasing memory out of nowhere.
+    // Will probably still work though.
     let slice = unsafe {
         &*core::ptr::slice_from_raw_parts(stack().end, current_stack_free() as usize / 4)
     };
