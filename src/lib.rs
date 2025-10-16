@@ -96,6 +96,12 @@ pub fn repaint_stack() {
 ///
 /// In other words: shows the worst case free stack space since [repaint_stack] was last called.
 ///
+/// This measurement can only ever be an ESTIMATE, and not a guarantee, as the amount of
+/// stack can change immediately, even during an interrupt while we are measuring, or
+/// by a devious user or compiler that re-paints the stack, obscuring the max
+/// measured value. This measurement MUST NOT be used for load-bearing-safety
+/// safety guarantees, only as a (generally accurate but non-guaranteed) measurement.
+///
 /// Runs in *O(n)* where *n* is the size of the stack.
 pub fn stack_painted() -> u32 {
     let res: *const u32;
