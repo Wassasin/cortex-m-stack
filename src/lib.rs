@@ -99,6 +99,15 @@ pub fn repaint_stack() {
 /// Runs in *O(n)* where *n* is the size of the stack.
 pub fn stack_painted() -> u32 {
     let res: *const u32;
+    // SAFETY: As per the [rust reference], inline asm is allowed to look below the
+    // stack pointer. We read the values between the end of stack and the current stack 
+    // pointer, which are all valid locations.
+    //
+    // In the case of interruption, there could be false negatives where we don't see
+    // stack that was used "behind" our cursor, however this is fine because we do not
+    // rely on this number for any safety-bearing contents, only as a metrics estimate.
+    //
+    // [rust reference]: https://doc.rust-lang.org/reference/inline-assembly.html#r-asm.rules.stack-below-sp
     unsafe {
         asm!(
             "0:",
