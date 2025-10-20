@@ -71,7 +71,7 @@ pub fn current_stack_fraction() -> f32 {
 ///
 /// **Note:** this can take some time, and an ISR could possibly interrupt this process,
 /// dirtying up your freshly painted stack.
-/// If you wish to prevent this, run this inside a critical section using [cortex_m::interrupt::free].
+/// If you wish to prevent this, run this inside a critical section using `cortex_m::interrupt::free`.
 ///
 /// Runs in *O(n)* where *n* is the size of the stack.
 /// This function is inefficient in the sense that it repaints the entire stack,
