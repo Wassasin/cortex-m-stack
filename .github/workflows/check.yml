@@ -1,0 +1,63 @@
+permissions:
+  contents: read
+on:
+  push:
+    branches: [main]
+  pull_request: # Cancel in progress pull_requests on update.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+name: check
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    name: cargo {fmt, clippy}
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [thumbv6m-none-eabi]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt,clippy
+      - name: rustup target add ${{ matrix.target }}
+        run: rustup target add ${{ matrix.target }}
+      - name: cargo fmt
+        run: cargo fmt --check
+      - name: cargo clippy
+        run: cargo clippy -- -F clippy::suspicious -F clippy::correctness -F clippy::perf -F clippy::style
+
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["1.87", "stable"] # Check MSRV and stable.
+        target: 
+        - "thumbv8m.main-none-eabihf"
+        - "thumbv6m-none-eabi"
+        - "thumbv7em-none-eabi"
+        - "thumbv7em-none-eabihf"
+        - "thumbv7m-none-eabi"
+        - "thumbv8m.base-none-eabi"
+        - "thumbv8m.main-none-eabi"
+    name: cargo check +${{ matrix.version }} ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install ${{ matrix.version }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.version }}
+      - name: rustup target add ${{ matrix.target }}
+        run: rustup target add ${{ matrix.target }}
+      - name: cargo +${{ matrix.version }} check
+        run: cargo +${{ matrix.version }} check --target ${{ matrix.target }}
+      - name: cargo +${{ matrix.version }} build  # Note: to check if the inline-assembly builds.
+        run: cargo +${{ matrix.version }} build --target ${{ matrix.target }}
