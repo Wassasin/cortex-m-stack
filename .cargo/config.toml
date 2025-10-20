@@ -1,2 +1,2 @@
 [build]
-target = "thumbv8m.main-none-eabihf" # Cortex-M33
+target = "thumbv6m-none-eabi" # Cortex-M0+

@@ -81,13 +81,13 @@ pub fn repaint_stack() {
     unsafe {
         asm!(
             "0:",
-            "cmp sp, r0",
+            "cmp sp, {ptr}",
             "bls 1f",
-            "stmia r0!, {{r1}}",
+            "stmia {ptr}!, {{{paint}}}",
             "b 0b",
             "1:",
-            in("r0") stack().end,
-            in("r1") STACK_PAINT_VALUE,
+            ptr = inout(reg) stack().end => _,
+            paint = in(reg) STACK_PAINT_VALUE,
         )
     };
 }
@@ -100,13 +100,14 @@ pub fn repaint_stack() {
 /// stack can change immediately, even during an interrupt while we are measuring, or
 /// by a devious user or compiler that re-paints the stack, obscuring the max
 /// measured value. This measurement MUST NOT be used for load-bearing-safety
-/// safety guarantees, only as a (generally accurate but non-guaranteed) measurement.
+/// guarantees, only as a (generally accurate but non-guaranteed) measurement.
 ///
 /// Runs in *O(n)* where *n* is the size of the stack.
+#[inline(never)]
 pub fn stack_painted() -> u32 {
     let res: *const u32;
     // SAFETY: As per the [rust reference], inline asm is allowed to look below the
-    // stack pointer. We read the values between the end of stack and the current stack 
+    // stack pointer. We read the values between the end of stack and the current stack
     // pointer, which are all valid locations.
     //
     // In the case of interruption, there could be false negatives where we don't see
@@ -122,7 +123,7 @@ pub fn stack_painted() -> u32 {
             "ldr {value}, [{ptr}]",
             "cmp {value}, {paint}",
             "bne 1f",
-            "add {ptr}, #4",
+            "adds {ptr}, #4",
             "b 0b",
             "1:",
             ptr = inout(reg) stack().end => res,
